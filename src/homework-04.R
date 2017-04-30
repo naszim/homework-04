@@ -18,14 +18,12 @@ hany_tweet <- summary(tweets$handle)
 hany_tweet <- table(tweets$handle)
 View(hany_tweet)
 mf_col <- c("blue", "red")
-barplot(hany_tweet, col = mf_col, border = FALSE,
-        main = "Candidate Tweets", ylab = "Tweet frequency")
-par(xpd = T)
-legend("right", 
-       legend = c("Hillary Clinton", "Donald Trump"), 
-       fill = mf_col)
-par(mar=c(1, 1, 1, 8), xpd=TRUE)
-par(xpd=T, mar=par()$mar+c(0,0,0,6))
+ggplot(tweets, aes(x=handle, fill=handle)) + 
+geom_bar() +
+  scale_fill_manual(values=c("blue", "red"), labels=c("Hillary Clinton", 
+                                                      "Donald Trump")) +
+  theme(axis.text.x = element_blank()) + 
+  xlab(" ") + ylab("Tweet frequency") + labs(fill="Candidate")
 ##3/1.)Kérd le, milyen nyelveken írta a tweeteket a két jelölt külön-külön! 
 ##Nézd meg, hogy a nem angol szövegek valóban nem angolok-e. Ha úgy gondolod, 
 ##hogy rosszul azonosították a nyelvet, akkor írd át az általad helyesnek 
@@ -37,9 +35,9 @@ par(xpd=T, mar=par()$mar+c(0,0,0,6))
 #a lang oszlop fejlécére kattintva rendeztem nyelv szerint, és átírtam az
 #eredeti df-ben, amit kellett. A végén eltávolítottam a felesleges df-eket.
 hillary_lang <- subset.data.frame(tweets, tweets$handle == "HillaryClinton",
-                                  select = c(text, lang))
+                                  select = c(handle, text, lang))
 donald_lang <- subset.data.frame(tweets, tweets$handle == "realDonaldTrump",
-                                 select = c(text, lang))
+                                 select = c(handle, text, lang))
 View(hillary_lang)
 View(donald_lang)
 tweets[237, 11] <- "en"
@@ -52,6 +50,16 @@ rm(hillary_lang, donald_lang)
 ##fig/sample/tweet2.png szerint, majd mentsd ki a plotot a fig mappába 
 ##tweet2.png néven! Az oszlopszínek legyenek "darkgrey" és "cornflowerblue". 
 ##(A nyelvek gyakorisága eltérhet az előző lépés miatt.)
+
+twlang <- cbind(tweets$handle, tweets$lang)
+kt_twlang <- table(twlang[,1], twlang[,2])
+kt_twlang <- as.data.frame(kt_twlang)
+colnames(kt_twlang) <- c("handle", "lang", "freq")
+ggplot(kt_twlang, aes(x=lang, y=freq, fill = handle)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("darkgrey", "cornflowerblue"),
+                    labels=c("Hillary Clinton", "Donald Trump")) +
+  xlab("Language") + ylab("Frequency") + labs(fill="Candidate")
 
 #4.) Írj egy függvényt, ami a "Hillary Clinton" bemenet esetében Hillary Clinton,
 #"Donald Trump" bemenet esetében pedig Donald Trump tweetjeit adja ki a 
@@ -66,3 +74,66 @@ rm(hillary_lang, donald_lang)
 source("src/homework-04-functions.R")
 twitter.campaign("Hillary Clinton", 10)
 twitter.campaign("Donald Trump", 15)
+##FELADAT VÉGE------------------------------------------------------------------
+
+##IV. feladat
+#1.) Hasonlítsd össze Hillary Clinton és Donald Trump tweetjeinek szentimentjeit 
+#és emócióit. Vizsgáld meg oszlopdiagrammal és idősoros ábrával az eltéréseket. 
+#Nézd meg, hogy statisztikailag szignifikáns-e a különbség a két jelölt 
+#szentimentjeinek ill. emócióinak száma között.
+kt_szentiment <- table(tweets$handle, tweets$text_sentiment)
+chisq.test(kt_szentiment)
+kt_emotion <- table(tweets$handle, tweets$text_emotion)
+chisq.test(kt_emotion)
+
+#Többen feltételezték, hogy Trump tweetjeit (legalább) két különböző ember írja,
+#az androidosokat feltételezhetően Trump, az iphone-osokat pedig valaki más (a 
+#mi adatainkban a source_url oszlop tartalmaz erre vonatkozó információkat).
+#Vizsgáld meg vizuálisan, hogy a mi adatunk szerint is különböznek-e a két 
+#forrásból származó tweetek szentimentjei ill. emóciói. Nézd meg, hogy 
+#statisztikailag szignifikáns-e a különbség.
+
+##szentimentre
+trump_szentiment <- subset.data.frame(tweets, tweets$handle == "realDonaldTrump",
+                                      select = c(text, source_url, 
+                                                 text_sentiment))
+
+trump_szentiment["twsource"] <- NA
+trump_szentiment <- within(
+  trump_szentiment, twsource[source_url=="http://twitter.com/download/iphone"] 
+  <- ("iphone"))
+trump_szentiment <- within(
+  trump_szentiment, twsource[source_url=="http://twitter.com/download/android"] 
+  <- ("android"))
+trump_szentiment <- subset.data.frame(
+  trump_szentiment, trump_szentiment$twsource != "NA", 
+  c(text, text_sentiment, twsource))
+
+kt_trumpszentiment <- table(
+  trump_szentiment$text_sentiment, trump_szentiment$twsource)
+
+chisq.test(kt_trumpszentiment)
+
+##emócióra
+trump_emotion <- subset.data.frame(tweets, tweets$handle == "realDonaldTrump",
+                                      select = c(text, source_url, 
+                                                 text_emotion))
+
+trump_emotion["twsource"] <- NA
+trump_emotion <- within(
+  trump_emotion, twsource[source_url=="http://twitter.com/download/iphone"] 
+  <- ("iphone"))
+trump_emotion <- within(
+  trump_emotion, twsource[source_url=="http://twitter.com/download/android"] 
+  <- ("android"))
+trump_emotion <- subset.data.frame(
+  trump_emotion, trump_emotion$twsource != "NA", 
+  c(text, text_emotion, twsource))
+
+kt_trumpemotion <- table(
+  trump_emotion$text_emotion, trump_emotion$twsource)
+
+chisq.test(kt_trumpemotion)
+
+rm(kt_emotion, kt_szentiment, kt_trumpemotion, kt_trumpszentiment, trump_emotion,
+   trump_szentiment, mf_col)
