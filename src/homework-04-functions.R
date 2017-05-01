@@ -9,6 +9,20 @@
 #a függvénnyel Hillary Clinton első 10, valamint Donald Trump első 15 legtöbbet 
 #retweetelt és kedvelt tweetjét.
 
+##A függvény argumentumok megadása nélkül Hillary Clinton első 5 tweetjét adja.
+##A függvény errort dob, ha nem Hillary Clintont vagy Donald Trumpot írjuk be,
+#kiírja a hiba okát. Szintén errort dob, ha túl nagy számot írunk be (csak akkor
+#vizsgálja, ha érvényes jelöltnevet írtunk be, ekkor megvizsgálja, hogy milyen
+#hosszú az a vektor, amiben azok a sorok szerepelnek, amik az adott jelölt
+#twitterazonosítóját tartalmazzák.)
+##Ha az argumentumok rendben vannak, akkor a függvény létrehozza a retweetek és
+#favoritok összegét tartalmazó oszlopot, és hozzáragasztja a tweets df végéhez.
+##Ezután subsetelek adott jelöltre úgy, hogy csak a tweet szövegét és ezt az
+#összeget tartalmazó oszlopok legyenek benne, utána ezt a subsetet rendezem az
+#összeg szerint csökkenő sorrendbe.
+##Végül a függvény ennek a subsetnek az elején lévő tweeteket írja ki, méghozzá 
+#annyi esetet, amennyi a második argumentum.
+
 twitter.campaign <- function(candidate = "Hillary Clinton", twno = 5) {
   if (candidate != "Hillary Clinton" & candidate != "Donald Trump") {
     stop("Invalid candidate name (accepted: Hillary Clinton or Donald Trump)")
@@ -38,5 +52,6 @@ twitter.campaign <- function(candidate = "Hillary Clinton", twno = 5) {
     df <- tweets[which(tweets$handle == "realDonaldTrump"), c(3,35)]
     df <- df[order(df$retfavsum, na.last = T, decreasing = T), ]
   }
+  
   return(head(df$text, n = twno))
 }
