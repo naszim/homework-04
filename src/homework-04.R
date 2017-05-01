@@ -17,13 +17,13 @@ View(tweets)
 hany_tweet <- summary(tweets$handle)
 hany_tweet <- table(tweets$handle)
 View(hany_tweet)
-mf_col <- c("blue", "red")
 ggplot(tweets, aes(x=handle, fill=handle)) + 
 geom_bar() +
   scale_fill_manual(values=c("blue", "red"), labels=c("Hillary Clinton", 
                                                       "Donald Trump")) +
   theme(axis.text.x = element_blank()) + 
   xlab(" ") + ylab("Tweet frequency") + labs(fill="Candidate")
+rm(hany_tweet)
 ##3/1.)Kérd le, milyen nyelveken írta a tweeteket a két jelölt külön-külön! 
 ##Nézd meg, hogy a nem angol szövegek valóban nem angolok-e. Ha úgy gondolod, 
 ##hogy rosszul azonosították a nyelvet, akkor írd át az általad helyesnek 
@@ -55,11 +55,13 @@ twlang <- cbind(tweets$handle, tweets$lang)
 kt_twlang <- table(twlang[,1], twlang[,2])
 kt_twlang <- as.data.frame(kt_twlang)
 colnames(kt_twlang) <- c("handle", "lang", "freq")
+
 ggplot(kt_twlang, aes(x=lang, y=freq, fill = handle)) +
   geom_bar(stat = "identity", position = "dodge") +
   scale_fill_manual(values = c("darkgrey", "cornflowerblue"),
                     labels=c("Hillary Clinton", "Donald Trump")) +
   xlab("Language") + ylab("Frequency") + labs(fill="Candidate")
+rm(kt_twlang, twlang)
 
 #4.) Írj egy függvényt, ami a "Hillary Clinton" bemenet esetében Hillary Clinton,
 #"Donald Trump" bemenet esetében pedig Donald Trump tweetjeit adja ki a 
@@ -82,13 +84,32 @@ twitter.campaign("Donald Trump", 15)
 #Nézd meg, hogy statisztikailag szignifikáns-e a különbség a két jelölt 
 #szentimentjeinek ill. emócióinak száma között.
 kt_szentiment <- table(tweets$handle, tweets$text_sentiment)
-chisq.test(kt_szentiment)
 kt_emotion <- table(tweets$handle, tweets$text_emotion)
+
+#szignifikáns-e a különbség?
+chisq.test(kt_szentiment)
 chisq.test(kt_emotion)
 
-#Többen feltételezték, hogy Trump tweetjeit (legalább) két különböző ember írja,
-#az androidosokat feltételezhetően Trump, az iphone-osokat pedig valaki más (a 
-#mi adatainkban a source_url oszlop tartalmaz erre vonatkozó információkat).
+#ábrákhoz előkészítem a kereszttáblát
+kt_szentiment <- as.data.frame(kt_szentiment)
+colnames(kt_szentiment) <- c("handle", "sent", "freq")
+kt_emotion <- as.data.frame(kt_emotion)
+colnames(kt_emotion) <- c("handle", "emotion", "freq")
+
+#barchart
+ggplot(kt_szentiment, aes(x=sent, y=freq, fill = handle)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("blue", "red"), 
+                    labels=c("Hillary Clinton", "Donald Trump")) +
+  xlab("Sentiment") + ylab("Frequency") + labs(fill="Candidate")
+rm(kt_emotion, kt_szentiment)
+
+#idősoros ábra
+
+#2.)Többen feltételezték, hogy Trump tweetjeit (legalább) két különböző ember 
+#írja, az androidosokat feltételezhetően Trump, az iphone-osokat pedig valaki 
+#más (a  mi adatainkban a source_url oszlop tartalmaz erre vonatkozó 
+#információkat).
 #Vizsgáld meg vizuálisan, hogy a mi adatunk szerint is különböznek-e a két 
 #forrásból származó tweetek szentimentjei ill. emóciói. Nézd meg, hogy 
 #statisztikailag szignifikáns-e a különbség.
@@ -114,6 +135,14 @@ kt_trumpszentiment <- table(
 
 chisq.test(kt_trumpszentiment)
 
+
+#ábra szentimentre
+ggplot(trump_szentiment, aes(x=text_sentiment, fill=twsource)) +
+  geom_bar(position = "dodge") + scale_fill_manual(values=c("yellow", "green")) + 
+  xlab("szentiment") + ylab("gyakoriság") + labs(fill="készülék") +
+  scale_x_discrete(limits=c("positive","negative", "neutral"))
+
+rm(trump_szentiment)
 ##emócióra
 trump_emotion <- subset.data.frame(tweets, tweets$handle == "realDonaldTrump",
                                       select = c(text, source_url, 
@@ -135,5 +164,14 @@ kt_trumpemotion <- table(
 
 chisq.test(kt_trumpemotion)
 
-rm(kt_emotion, kt_szentiment, kt_trumpemotion, kt_trumpszentiment, trump_emotion,
-   trump_szentiment, mf_col)
+#ábra emócióra
+trump_emotion <- subset.data.frame(trump_emotion, trump_emotion$text_emotion != "unknown",
+                  c("text_emotion", "twsource"))
+ggplot(trump_emotion, aes(x=text_emotion, fill=twsource)) +
+  geom_bar(position = "dodge") + scale_fill_manual(values=c("yellow", "green")) + 
+  xlab("emóció") + ylab("gyakoriság") + labs(fill="készülék") + 
+  scale_x_discrete(limits=c("joy","sadness", "surprise", "anger",
+                            "fear", "disgust")) + 
+  theme(axis.text.x = element_text(angle=30, hjust=1, vjust=1))
+rm(trump_emotion)
+
